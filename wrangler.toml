@@ -1,0 +1,10 @@
+name = "glonova-data-collector"
+main = "worker.js"
+compatibility_date = "2023-05-19"
+
+# Configure environment variables
+# You'll add the GitHub PAT through the Cloudflare dashboard
+# or using wrangler secret commands after deployment
+
+# Note: The routes configuration will be done through the Cloudflare dashboard
+# after deployment. You'll need to set up a route for /api/submit-data
