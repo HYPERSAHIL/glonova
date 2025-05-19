@@ -1,3 +1,9 @@
-name = "glonova-data-collector"
+name = "glonova"
 main = "worker.js"
 compatibility_date = "2023-05-19"
+
+# Domains & Routes
+workers_dev = true
+
+# Observability
+logpush = { enabled = false }
