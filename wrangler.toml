@@ -6,4 +6,4 @@ compatibility_date = "2023-05-19"
 workers_dev = true
 
 # Observability
-logpush = { enabled = false }
+logpush = false
