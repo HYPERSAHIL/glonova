@@ -1,0 +1,20 @@
+{
+  "name": "free-data-app",
+  "version": "1.0.0",
+  "description": "A simple app to collect user data and photos.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "data",
+    "collection",
+    "camera"
+  ],
+  "author": "Kilo Code",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2"
+  }
+}
