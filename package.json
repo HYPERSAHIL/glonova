@@ -4,8 +4,7 @@
   "description": "A simple app to collect user data and photos.",
   "main": "worker.js",
   "scripts": {
-    "start": "node server.js",
-    "deploy": "wrangler deploy"
+    "start": "node server.js"
   },
   "keywords": [
     "data",
@@ -17,8 +16,5 @@
   "dependencies": {
     "express": "^4.18.2",
     "body-parser": "^1.20.2"
-  },
-  "devDependencies": {
-    "wrangler": "^4.15.0"
   }
 }
