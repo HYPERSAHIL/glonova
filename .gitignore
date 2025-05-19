@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Local environment variables (if you use a .env file for secrets)
+.env*
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Log files (if any are generated locally and not intended for repo)
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

