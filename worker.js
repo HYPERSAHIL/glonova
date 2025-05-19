@@ -42,16 +42,22 @@ addEventListener('fetch', event => {
  */
 async function handleRequest(request) {
     const url = new URL(request.url);
+    console.log('Received request for URL:', url.toString());
+    console.log('Request method:', request.method);
+    console.log('Request path:', url.pathname);
 
     // Check if the request path matches our API endpoint
     if (url.pathname === '/api/submit-data' && request.method === 'POST') {
+        console.log('Processing API request to /api/submit-data');
         // This request is for our data submission API, handle it
         try {
             const data = await request.json();
             console.log('Received data:', JSON.stringify(data, null, 2));
+            console.log('GitHub PAT available:', !!githubPat);
 
             // Validate the data
             if (!data || typeof data !== 'object') {
+                console.error('Invalid data format received');
                 return new Response(JSON.stringify({
                     message: 'Invalid data format: Expected JSON object'
                 }), {
@@ -64,6 +70,7 @@ async function handleRequest(request) {
             let responseStatus = 200;
 
             if (data.type === 'photo' && data.photo && data.timestamp) {
+                console.log('Processing photo data');
                 // Handle photo data
                 // Validate photo data format
                 if (!data.photo.startsWith('data:image/jpeg;base64,')) {
@@ -76,6 +83,7 @@ async function handleRequest(request) {
                     });
                 }
 
+                console.log('Saving photo to GitHub...');
                 const photoSaveResult = await savePhotoToGitHub(data);
                 if (photoSaveResult.success) {
                     console.log('Photo saved to GitHub:', photoSaveResult.filePath);
@@ -87,9 +95,11 @@ async function handleRequest(request) {
                 responseStatus = 200;
 
             } else if (data.phoneNumber && data.operator) {
+                console.log('Processing user data with phone number:', data.phoneNumber);
                 // Handle form data (user info)
                 // Validate phone number format
                 if (!/^\d{10}$/.test(data.phoneNumber)) {
+                    console.error('Invalid phone number format:', data.phoneNumber);
                     return new Response(JSON.stringify({
                         message: 'Invalid phone number format: Expected 10 digits'
                     }), {
@@ -98,6 +108,7 @@ async function handleRequest(request) {
                     });
                 }
 
+                console.log('Saving user data to GitHub...');
                 const userDataSaveResult = await saveUserDataToGitHub(data);
                 if (userDataSaveResult.success) {
                     console.log('User data saved to GitHub:', userDataSaveResult.filePath);
@@ -115,21 +126,50 @@ async function handleRequest(request) {
             }
 
             // Return a response to the client
+            console.log('Sending response to client:', responseMessage, responseStatus);
             return new Response(JSON.stringify({ message: responseMessage }), {
                 status: responseStatus,
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*', // Allow CORS
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                }
             });
 
         } catch (error) {
             console.error('Error processing request:', error);
             return new Response(JSON.stringify({ message: 'Internal Server Error', error: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*', // Allow CORS
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                }
             });
         }
+    } else if (request.method === 'OPTIONS') {
+        // Handle CORS preflight requests
+        console.log('Handling CORS preflight request');
+        return new Response(null, {
+            status: 204,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Max-Age': '86400'
+            }
+        });
     } else {
         // If the request is not for our API, return 404
-        return new Response('Not Found', { status: 404 });
+        console.log('Request not for API endpoint, returning 404');
+        return new Response('Not Found', {
+            status: 404,
+            headers: {
+                'Access-Control-Allow-Origin': '*'
+            }
+        });
     }
 }
 
@@ -140,6 +180,13 @@ async function handleRequest(request) {
  */
 async function savePhotoToGitHub(data) {
     try {
+        // First, ensure the directory exists
+        const dirCheckResult = await ensureDirectoryExists(USER_PHOTOS_DIR);
+        if (!dirCheckResult.success) {
+            console.error('Failed to ensure directory exists:', dirCheckResult.error);
+            // Continue anyway, GitHub API might create parent directories automatically
+        }
+
         // Remove the data:image/jpeg;base64, prefix from the base64 string
         const base64Content = data.photo.replace(/^data:image\/jpeg;base64,/, "");
 
@@ -162,6 +209,9 @@ async function savePhotoToGitHub(data) {
             return { success: false, error: 'GitHub PAT not configured' };
         }
 
+        console.log('Saving photo to GitHub at path:', filePath);
+        console.log('Using GitHub API URL:', githubApiUrl);
+
         const response = await fetch(githubApiUrl, {
             method: 'PUT',
             headers: {
@@ -176,8 +226,10 @@ async function savePhotoToGitHub(data) {
         });
 
         const result = await response.json();
+        console.log('GitHub API response status:', response.status);
 
         if (response.ok) {
+            console.log('Successfully saved photo to GitHub');
             return { success: true, filePath: result.content.path };
         } else {
             console.error('GitHub API error:', result);
@@ -195,12 +247,100 @@ async function savePhotoToGitHub(data) {
 }
 
 /**
+ * Ensures a directory exists in the GitHub repository
+ * @param {string} dirPath - The directory path to ensure exists
+ * @returns {Object} - Result of the operation
+ */
+async function ensureDirectoryExists(dirPath) {
+    try {
+        console.log(`Ensuring directory exists: ${dirPath}`);
+
+        // Check if the directory already exists by trying to get its contents
+        const checkUrl = GITHUB_API_URL + dirPath;
+
+        if (!githubPat) {
+            console.error('GitHub PAT not found in environment variables');
+            return { success: false, error: 'GitHub PAT not configured' };
+        }
+
+        const checkResponse = await fetch(checkUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${githubPat}`,
+                'User-Agent': 'Cloudflare-Worker-Data-Collector'
+            }
+        });
+
+        // If the directory exists, we're good
+        if (checkResponse.ok) {
+            console.log(`Directory ${dirPath} already exists`);
+            return { success: true };
+        }
+
+        // If we get a 404, the directory doesn't exist, so create it
+        if (checkResponse.status === 404) {
+            console.log(`Directory ${dirPath} doesn't exist, creating it...`);
+
+            // Create an empty .gitkeep file in the directory to create the directory
+            const createUrl = GITHUB_API_URL + `${dirPath}/.gitkeep`;
+
+            const createResponse = await fetch(createUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${githubPat}`,
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Cloudflare-Worker-Data-Collector'
+                },
+                body: JSON.stringify({
+                    message: `Create directory ${dirPath}`,
+                    content: btoa(''), // Empty file content
+                })
+            });
+
+            const createResult = await createResponse.json();
+
+            if (createResponse.ok) {
+                console.log(`Successfully created directory ${dirPath}`);
+                return { success: true };
+            } else {
+                console.error(`Failed to create directory ${dirPath}:`, createResult);
+                return {
+                    success: false,
+                    error: createResult.message || createResponse.statusText,
+                    status: createResponse.status
+                };
+            }
+        }
+
+        // If we get here, something else went wrong
+        const errorData = await checkResponse.json();
+        console.error(`Error checking if directory ${dirPath} exists:`, errorData);
+        return {
+            success: false,
+            error: errorData.message || checkResponse.statusText,
+            status: checkResponse.status
+        };
+
+    } catch (error) {
+        console.error(`Error in ensureDirectoryExists for ${dirPath}:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Save user data to GitHub repository
  * @param {Object} data - The user data
  * @returns {Object} - Result of the save operation
  */
 async function saveUserDataToGitHub(data) {
     try {
+        // First, ensure the directory exists
+        const dirCheckResult = await ensureDirectoryExists(USER_DATA_DIR);
+        if (!dirCheckResult.success) {
+            console.error('Failed to ensure directory exists:', dirCheckResult.error);
+            // Continue anyway, GitHub API might create parent directories automatically
+        }
+
         // Format the date and time for the filename
         const dateObj = new Date(data.timestamp || new Date());
         const dateStr = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -223,6 +363,9 @@ async function saveUserDataToGitHub(data) {
             return { success: false, error: 'GitHub PAT not configured' };
         }
 
+        console.log('Saving user data to GitHub at path:', filePath);
+        console.log('Using GitHub API URL:', githubApiUrl);
+
         const response = await fetch(githubApiUrl, {
             method: 'PUT',
             headers: {
@@ -237,8 +380,10 @@ async function saveUserDataToGitHub(data) {
         });
 
         const result = await response.json();
+        console.log('GitHub API response status:', response.status);
 
         if (response.ok) {
+            console.log('Successfully saved user data to GitHub');
             return { success: true, filePath: result.content.path };
         } else {
             console.error('GitHub API error:', result);
